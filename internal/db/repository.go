@@ -2,9 +2,10 @@ package db
 
 import (
 	"context"
-	"example/user/hello/internal/db/tables"
-	"example/user/hello/types"
 	"mime/multipart"
+
+	"github.com/yuhangang/chat-app-backend/internal/db/tables"
+	"github.com/yuhangang/chat-app-backend/types"
 )
 
 type Database interface {

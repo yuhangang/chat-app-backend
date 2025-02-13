@@ -2,15 +2,17 @@ package jwt_service
 
 import (
 	"errors"
-	"example/user/hello/types"
 	"os"
 	"time"
+
+	"github.com/yuhangang/chat-app-backend/internal/handler"
+	"github.com/yuhangang/chat-app-backend/types"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const kaccessTokenLife = 7 * 24 * time.Hour
-const krefreshTokenLife = 7 * 24 * time.Hour
+const kaccessTokenLife = 1 * 24 * time.Hour
+const krefreshTokenLife = 60 * 24 * time.Hour
 
 type JwtServiceImpl struct {
 	accessSecret  []byte
@@ -22,7 +24,7 @@ func NewJwtService() (*JwtServiceImpl, error) {
 	refreshSecretFromEnv := os.Getenv("REFRESH_SECRET")
 
 	if accessSecretFromEnv == "" || refreshSecretFromEnv == "" {
-		return nil, errors.New("missing JWT secrets in environment")
+		return nil, handler.ErrMissingJWTSecret
 	}
 
 	return &JwtServiceImpl{
@@ -46,6 +48,27 @@ func (j *JwtServiceImpl) GenerateTokens(userID uint) (types.JwtPayload, error) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (j *JwtServiceImpl) RefreshAccessToken(refreshToken string) (string, error) {
+	// Validate the refresh token
+	claims, err := j.ValidateRefreshToken(refreshToken)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if refresh token is expired
+	if time.Now().After(claims.ExpiresAt.Time) {
+		return "", handler.ErrExpiredToken
+	}
+
+	// Generate new access token
+	newAccessToken, err := j.createToken(claims.UserID, j.accessSecret, kaccessTokenLife)
+	if err != nil {
+		return "", err
+	}
+
+	return newAccessToken, nil
 }
 
 func (j *JwtServiceImpl) ValidateAccessToken(tokenString string) (types.Claims, error) {
@@ -77,11 +100,14 @@ func (j *JwtServiceImpl) parseToken(tokenString string, secret []byte) (types.Cl
 	})
 
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return types.Claims{}, handler.ErrExpiredToken
+		}
 		return types.Claims{}, err
 	}
 
 	if !token.Valid {
-		return types.Claims{}, errors.New("invalid token")
+		return types.Claims{}, handler.ErrInvalidToken
 	}
 
 	return *claims, nil

@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
-	"example/user/hello/internal/db/tables"
-	"example/user/hello/types"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
+
+	"github.com/yuhangang/chat-app-backend/internal/db/tables"
+	"github.com/yuhangang/chat-app-backend/types"
 
 	"github.com/google/generative-ai-go/genai"
 	"gorm.io/gorm"

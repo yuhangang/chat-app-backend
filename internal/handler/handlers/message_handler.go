@@ -2,11 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"example/user/hello/internal/db"
-	"example/user/hello/pkg/ctxkey"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/yuhangang/chat-app-backend/internal/db"
+	"github.com/yuhangang/chat-app-backend/pkg/ctxkey"
 )
 
 type MessageHandlerImpl struct {
@@ -31,12 +32,7 @@ func (h *MessageHandlerImpl) CreateChatRoomWithMessage(w http.ResponseWriter, r 
 	var err error
 	// read the request ['prompt'] from the request
 	prompt := r.FormValue("prompt")
-	_, fileHeader, err := r.FormFile("attachment")
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	_, fileHeader, _ := r.FormFile("attachment")
 
 	userId := r.Context().Value(ctxkey.UserIDKey).(uint)
 
@@ -101,12 +97,7 @@ func (h *MessageHandlerImpl) CreateMessage(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get the uploaded files (attachments)
-	_, fileHeader, err := r.FormFile("attachment")
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	_, fileHeader, _ := r.FormFile("attachment")
 
 	// Call Gemini for a response based on the prompt
 	geminiResponse, err := h.llmRepository.CallGemini(r.Context(), prompt, uint(chatRoomID), true, fileHeader)

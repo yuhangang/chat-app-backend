@@ -2,65 +2,20 @@ package handlers
 
 import (
 	"encoding/json"
-	"example/user/hello/internal/db"
-	"example/user/hello/internal/db/tables"
-	"example/user/hello/pkg/ctxkey"
-	"example/user/hello/types"
 	"net/http"
 
-	"github.com/google/uuid"
+	"github.com/yuhangang/chat-app-backend/internal/db"
+	"github.com/yuhangang/chat-app-backend/internal/db/tables"
+	"github.com/yuhangang/chat-app-backend/pkg/ctxkey"
 )
 
 type UserHandlerImpl struct {
 	userRepository db.UserRepository
-	jwtService     types.JwtService
 }
 
-func NewUserHandler(userRepo db.UserRepository, jwtService types.JwtService) *UserHandlerImpl {
+func NewUserHandler(userRepo db.UserRepository) *UserHandlerImpl {
 	return &UserHandlerImpl{
 		userRepository: userRepo,
-		jwtService:     jwtService,
-	}
-}
-
-func (h *UserHandlerImpl) CreateUser(w http.ResponseWriter, r *http.Request) {
-	// Get username or generate one if empty
-	username := r.URL.Query().Get("username")
-	if username == "" {
-		username = "user_" + uuid.New().String()[:8] // Generates a short unique username
-	}
-
-	user := tables.User{
-		Username: username,
-	}
-
-	userCreated, err := h.userRepository.CreateUser(r.Context(), user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Generate JWT
-	jwtPayload, err := h.jwtService.GenerateTokens(userCreated.ID)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Return JWT and user as JSON
-	jwtPayloadResponse := UserResponse{
-		AccessToken:  jwtPayload.AccessToken,
-		RefreshToken: jwtPayload.RefreshToken,
-		User:         userCreated,
-	}
-
-	w.Header().Set("Content-Type", "application/json") // Correct header order
-	w.WriteHeader(http.StatusCreated)
-
-	// Return user as JSON
-	if err := json.NewEncoder(w).Encode(jwtPayloadResponse); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

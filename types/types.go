@@ -31,6 +31,7 @@ type JwtService interface {
 	GenerateTokens(userID uint) (JwtPayload, error)
 	ValidateAccessToken(tokenString string) (Claims, error)
 	ValidateRefreshToken(tokenString string) (Claims, error)
+	RefreshAccessToken(refreshToken string) (string, error)
 }
 
 type HttpServiceV1 interface {

@@ -1,9 +1,10 @@
 package db
 
 import (
-	"example/user/hello/internal/db/tables"
-	"example/user/hello/internal/log"
 	"os"
+
+	"github.com/yuhangang/chat-app-backend/internal/db/tables"
+	"github.com/yuhangang/chat-app-backend/internal/log"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -27,7 +28,7 @@ func InitDB() (*gorm.DB, error) {
 	}
 
 	// reset the database
-	//	db.Migrator().DropTable(&tables.ChatRoom{}, &tables.ChatMessage{})
+	//db.Migrator().DropTable(&tables.User{}, &tables.ChatRoom{}, &tables.ChatMessage{}, &tables.ChatAttachment{})
 
 	// Ensure the table exists before running queries
 	err = db.AutoMigrate(&tables.User{}, &tables.ChatRoom{}, &tables.ChatMessage{}, &tables.ChatAttachment{})

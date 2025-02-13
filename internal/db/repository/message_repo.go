@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
-	"example/user/hello/internal/db/tables"
-	"example/user/hello/internal/service"
 	"mime/multipart"
+
+	"github.com/yuhangang/chat-app-backend/internal/db/tables"
+	"github.com/yuhangang/chat-app-backend/internal/service"
 
 	"gorm.io/gorm"
 )

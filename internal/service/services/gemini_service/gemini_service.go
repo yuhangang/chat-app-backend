@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"example/user/hello/types"
+	"github.com/yuhangang/chat-app-backend/types"
 
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
@@ -80,7 +80,7 @@ func (s *GeminiServiceV1) SendFileWithText(ctx context.Context, prompt string, h
 	defer s.client.DeleteFile(ctx, uploadedFile.Name)
 
 	// Use the Gemini model
-	model := s.client.GenerativeModel("gemini-2.0-flash")
+	model := s.client.GenerativeModel("gemini-1.5-flash")
 
 	// Generate content using the prompt and the uploaded file
 	resp, err := model.GenerateContent(ctx,

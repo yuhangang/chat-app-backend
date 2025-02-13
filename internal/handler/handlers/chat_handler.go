@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
-	"example/user/hello/internal/db"
-	"example/user/hello/internal/db/tables"
-	"example/user/hello/pkg/ctxkey"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/yuhangang/chat-app-backend/internal/db"
+	"github.com/yuhangang/chat-app-backend/internal/db/tables"
+	"github.com/yuhangang/chat-app-backend/pkg/ctxkey"
 )
 
 type ChatHandlerImpl struct {

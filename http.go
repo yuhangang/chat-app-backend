@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
-	"example/user/hello/internal/db"
-	"example/user/hello/internal/db/repository"
-	"example/user/hello/internal/handler"
-	"example/user/hello/internal/handler/handlers"
-	"example/user/hello/internal/service/services/gemini_service"
-	"example/user/hello/internal/service/services/jwt_service"
-	"example/user/hello/internal/service/services/storage_service"
 	"log"
 	"net/http"
+
+	"github.com/yuhangang/chat-app-backend/internal/db"
+	"github.com/yuhangang/chat-app-backend/internal/db/repository"
+	"github.com/yuhangang/chat-app-backend/internal/handler"
+	"github.com/yuhangang/chat-app-backend/internal/handler/handlers"
+	"github.com/yuhangang/chat-app-backend/internal/service/services/gemini_service"
+	"github.com/yuhangang/chat-app-backend/internal/service/services/jwt_service"
+	"github.com/yuhangang/chat-app-backend/internal/service/services/storage_service"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -43,11 +44,12 @@ func NewHttpServer(ctx context.Context, addr string) *httpServer {
 	messageRepo := repository.NewMessageRepo(conn, storageService)
 	llmRepo := repository.NewLLMRepo(conn, llmService)
 
-	userHandler := handlers.NewUserHandler(userRepository, jwtService)
+	userHandler := handlers.NewUserHandler(userRepository)
 	chatHandler := handlers.NewChatHandler(chatRepository)
 	messageHandler := handlers.NewMessageChatHandler(chatRepository, messageRepo, llmRepo)
+	authHandler := handlers.NewAuthHandler(userRepository, jwtService)
 
-	httpHandler := handler.NewHandler(chatHandler, messageHandler, userHandler, jwtService)
+	httpHandler := handler.NewHandler(chatHandler, messageHandler, userHandler, authHandler, jwtService)
 
 	return &httpServer{addr: addr, httpHandler: httpHandler}
 }

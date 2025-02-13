@@ -2,10 +2,12 @@ package handler
 
 import (
 	"context"
-	"example/user/hello/pkg/ctxkey"
-	"example/user/hello/types"
+	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/yuhangang/chat-app-backend/pkg/ctxkey"
+	"github.com/yuhangang/chat-app-backend/types"
 
 	"github.com/gorilla/mux"
 )
@@ -14,14 +16,16 @@ type Handler struct {
 	chatHandler    ChatHandler
 	messageHandler MessageHandler
 	userHandler    UserHandler
+	authHandler    AuthHandler
 	jwtService     types.JwtService
 }
 
-func NewHandler(chatHandler ChatHandler, messageHandler MessageHandler, userHandler UserHandler, jwtService types.JwtService) *Handler {
+func NewHandler(chatHandler ChatHandler, messageHandler MessageHandler, userHandler UserHandler, authHandler AuthHandler, jwtService types.JwtService) *Handler {
 	return &Handler{
 		chatHandler:    chatHandler,
 		messageHandler: messageHandler,
 		userHandler:    userHandler,
+		authHandler:    authHandler,
 		jwtService:     jwtService,
 	}
 }
@@ -39,7 +43,8 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 
 	// No protection
 	publicRoutes := map[string]func(http.ResponseWriter, *http.Request){
-		"POST /user": h.userHandler.CreateUser,
+		"POST /auth":         h.authHandler.CreateUser,
+		"POST /auth/refresh": h.authHandler.RefreshToken,
 	}
 
 	for route, handler := range jwtProtectedRoutes {
@@ -98,7 +103,6 @@ type ChatHandler interface {
 }
 
 type UserHandler interface {
-	CreateUser(http.ResponseWriter, *http.Request)
 	GetUser(http.ResponseWriter, *http.Request)
 }
 
@@ -106,3 +110,14 @@ type MessageHandler interface {
 	CreateChatRoomWithMessage(http.ResponseWriter, *http.Request)
 	CreateMessage(http.ResponseWriter, *http.Request)
 }
+
+type AuthHandler interface {
+	CreateUser(http.ResponseWriter, *http.Request)
+	RefreshToken(http.ResponseWriter, *http.Request)
+}
+
+var (
+	ErrInvalidToken     = errors.New("invalid token")
+	ErrExpiredToken     = errors.New("token has expired")
+	ErrMissingJWTSecret = errors.New("missing JWT secrets in environment")
+)
