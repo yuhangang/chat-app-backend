@@ -11,7 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const kaccessTokenLife = 1 * 24 * time.Hour
+const kaccessTokenLife = 30 * time.Minute
 const krefreshTokenLife = 60 * 24 * time.Hour
 
 type JwtServiceImpl struct {

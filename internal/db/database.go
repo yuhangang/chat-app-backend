@@ -12,7 +12,7 @@ import (
 
 func InitDB() (*gorm.DB, error) {
 	var db *gorm.DB
-	dbFile := "notifications.db"
+	dbFile := "database.db"
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
 		file, err := os.Create(dbFile)
 		if err != nil {

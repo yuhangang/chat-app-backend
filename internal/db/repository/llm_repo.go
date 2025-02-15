@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 
+	"github.com/google/generative-ai-go/genai"
 	"github.com/yuhangang/chat-app-backend/internal/db/tables"
 	"github.com/yuhangang/chat-app-backend/types"
-
-	"github.com/google/generative-ai-go/genai"
 	"gorm.io/gorm"
 )
 
@@ -25,13 +25,15 @@ func NewLLMRepo(conn *gorm.DB, llmService types.HttpServiceV1) *LLMRepo {
 
 func (r *LLMRepo) CallGemini(ctx context.Context, prompt string, chatroomId uint, useHistory bool, file *multipart.FileHeader,
 ) (types.GeminiApiResponse, error) {
-	var history []genai.Part
+	var history []*genai.Content
 	var err error
-	if !useHistory {
+	if useHistory {
 		history, err = getChatHistory(r, chatroomId)
 		if err != nil {
 			return types.GeminiApiResponse{}, err
 		}
+
+		log.Println("History: ", history)
 	}
 
 	if file != nil {
@@ -69,15 +71,28 @@ func saveUploadedFile(fileHeader *multipart.FileHeader) (string, error) {
 	return tempFile.Name(), nil
 }
 
-func getChatHistory(r *LLMRepo, chatroomId uint) ([]genai.Part, error) {
-	var messages []string
+func getChatHistory(r *LLMRepo, chatroomId uint) ([]*genai.Content, error) {
+	var messages []struct {
+		Body   string
+		IsUser bool
+	}
 	err := r.conn.Model(&tables.ChatMessage{}).
 		Where("chat_room_id = ?", chatroomId).
-		Pluck("body", &messages).Error
+		Scan(&messages).Error
 
-	history := make([]genai.Part, len(messages))
+	history := make([]*genai.Content, len(messages))
 	for i, m := range messages {
-		history[i] = genai.Text(m)
+		history[i] = &genai.Content{
+			Parts: []genai.Part{
+				genai.Text(m.Body),
+			},
+			Role: func() string {
+				if m.IsUser {
+					return "user"
+				}
+				return "model"
+			}(),
+		}
 	}
 
 	return history, err

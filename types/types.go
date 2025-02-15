@@ -35,8 +35,8 @@ type JwtService interface {
 }
 
 type HttpServiceV1 interface {
-	CallGemini(context.Context, string, []genai.Part) (GeminiApiResponse, error)
-	SendFileWithText(ctx context.Context, prompt string, history []genai.Part, tempFilePath string) (GeminiApiResponse, error)
+	CallGemini(context.Context, string, []*genai.Content) (GeminiApiResponse, error)
+	SendFileWithText(ctx context.Context, prompt string, history []*genai.Content, tempFilePath string) (GeminiApiResponse, error)
 }
 
 type GeminiApiResponse struct {

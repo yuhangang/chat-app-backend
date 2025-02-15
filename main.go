@@ -16,7 +16,7 @@ func main() {
 	// env of gemini api key
 	log.Println("Starting server...")
 
-	httpServer := NewHttpServer(ctx, ":3001")
+	httpServer := NewHttpServer(ctx, ":8080")
 	fileServer := NewFileServer(":3002")
 	go func() {
 		if err := httpServer.Run(); err != nil {

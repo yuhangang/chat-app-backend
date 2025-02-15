@@ -39,3 +39,11 @@ type ChatAttachment struct {
 	FilePath  string    `gorm:"type:varchar(255);not null" json:"file_path"` // Path or URL to the file
 	MessageID uint      `gorm:"not null;index" json:"message_id"`            // Foreign key to ChatMessage
 }
+
+type LlmModel struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	ModelKey  string    `gorm:"type:varchar(100);not null" json:"model_key"`
+	Name      string    `gorm:"type:varchar(100);not null" json:"name"`
+	Creator   string    `gorm:"type:varchar(100);not null" json:"creator"`
+}

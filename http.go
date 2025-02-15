@@ -70,5 +70,5 @@ func (s *httpServer) Run() error {
 
 	// Start the server with CORS middleware applied
 
-	return http.ListenAndServe(":3001", c.Handler(router))
+	return http.ListenAndServe(":8080", c.Handler(router))
 }
