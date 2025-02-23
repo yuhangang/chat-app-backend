@@ -43,20 +43,22 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 
 	// No protection
 	publicRoutes := map[string]func(http.ResponseWriter, *http.Request){
-		"POST /auth":         h.authHandler.CreateUser,
-		"POST /auth/refresh": h.authHandler.RefreshToken,
+		"POST /auth":           h.authHandler.CreateUser,
+		"POST /auth/login":     h.authHandler.Login,
+		"POST /auth/refresh":   h.authHandler.RefreshToken,
+		"POST /auth/bind-user": h.authHandler.BindUser,
 	}
 
 	for route, handler := range jwtProtectedRoutes {
 		parts := strings.Split(route, " ")
 		method, path := parts[0], parts[1]
-		router.HandleFunc(path, h.jwtAuthMiddleware(handler)).Methods(method)
+		router.HandleFunc(path, h.jwtAuthMiddleware(handler, true)).Methods(method)
 	}
 
 	for route, handler := range publicRoutes {
 		parts := strings.Split(route, " ")
 		method, path := parts[0], parts[1]
-		router.HandleFunc(path, handler).Methods(method)
+		router.HandleFunc(path, h.jwtAuthMiddleware(handler, false)).Methods(method)
 	}
 
 }
@@ -75,17 +77,19 @@ func (h *Handler) fullAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 */
 
-func (h *Handler) jwtAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (h *Handler) jwtAuthMiddleware(next http.HandlerFunc, requireJwt bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
-		if tokenString == "" {
+
+		if requireJwt && tokenString == "" {
 			http.Error(w, "Missing authorization token", http.StatusUnauthorized)
 			return
 		}
 
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 		claims, err := h.jwtService.ValidateAccessToken(tokenString)
-		if err != nil {
+
+		if requireJwt && err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
@@ -112,8 +116,10 @@ type MessageHandler interface {
 }
 
 type AuthHandler interface {
+	Login(http.ResponseWriter, *http.Request)
 	CreateUser(http.ResponseWriter, *http.Request)
 	RefreshToken(http.ResponseWriter, *http.Request)
+	BindUser(http.ResponseWriter, *http.Request)
 }
 
 var (

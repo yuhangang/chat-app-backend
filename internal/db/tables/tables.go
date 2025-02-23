@@ -7,7 +7,7 @@ import (
 type User struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
 	CreatedAt time.Time  `gorm:"autoCreateTime" json:"created_at"`
-	Username  string     `gorm:"type:varchar(100);not null;index" json:"username"`
+	Username  string     `gorm:"type:varchar(100);not null;uniqueIndex" json:"username"`
 	ChatRooms []ChatRoom `gorm:"foreignKey:UserID" json:"chat_rooms"`
 }
 
