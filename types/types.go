@@ -35,10 +35,11 @@ type JwtService interface {
 }
 
 type HttpServiceV1 interface {
-	CallGemini(context.Context, string, []*genai.Content) (GeminiApiResponse, error)
-	SendFileWithText(ctx context.Context, prompt string, history []*genai.Content, tempFilePath string) (GeminiApiResponse, error)
+	CallGemini(context.Context, string, string, []*genai.Content) (GeminiApiResponse, error)
+	SendFileWithText(ctx context.Context, string, prompt string, history []*genai.Content, tempFilePath string) (GeminiApiResponse, error)
 }
 
 type GeminiApiResponse struct {
-	Response string `json:"response"`
+	Response  string `json:"response"`
+	SessionID string `json:"session_id"`
 }

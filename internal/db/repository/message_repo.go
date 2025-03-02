@@ -6,6 +6,7 @@ import (
 
 	"github.com/yuhangang/chat-app-backend/internal/db/tables"
 	"github.com/yuhangang/chat-app-backend/internal/service"
+	"github.com/yuhangang/chat-app-backend/types"
 
 	"gorm.io/gorm"
 )
@@ -82,9 +83,10 @@ func (repo *MessageRepo) CreateMessage(
 
 			// Create the attachment record
 			attachment := tables.ChatAttachment{
-				FileName:  attachment.Filename,
-				FileType:  attachment.Header.Get("Content-Type"),
-				FileSize:  attachment.Size,
+				FileName: attachment.Filename,
+				FileType: attachment.Header.Get("Content-Type"),
+				FileSize: attachment.Size,
+				// TODO: upload to cloud storage and get the URL
 				FilePath:  "http://localhost:3002/" + filePath,
 				MessageID: chatMessage.ID, // Attach to the user's message
 			}
@@ -115,12 +117,13 @@ func (repo *MessageRepo) CreateChatRoomWithMessage(
 	userID uint,
 	chatRoomName string,
 	message string,
-	response string,
+	response types.GeminiApiResponse,
 	attachment *multipart.FileHeader) (tables.ChatRoom, error) {
 	// Create the chat room
 	chatRoom := tables.ChatRoom{
-		UserID: userID,
-		Name:   chatRoomName,
+		UserID:    userID,
+		Name:      chatRoomName,
+		SessionID: response.SessionID,
 	}
 
 	// Start a transaction to ensure both message and attachments are saved atomically
@@ -143,7 +146,7 @@ func (repo *MessageRepo) CreateChatRoomWithMessage(
 		// Create the chat message for the response
 		chatResponse := tables.ChatMessage{
 			ChatRoomID: chatRoom.ID,
-			Body:       response,
+			Body:       response.Response,
 		}
 
 		// Save the user message

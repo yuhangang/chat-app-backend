@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"os"
 
 	"github.com/google/generative-ai-go/genai"
+	"github.com/google/uuid"
 	"github.com/yuhangang/chat-app-backend/internal/db/tables"
 	"github.com/yuhangang/chat-app-backend/types"
 	"gorm.io/gorm"
@@ -23,17 +23,21 @@ func NewLLMRepo(conn *gorm.DB, llmService types.HttpServiceV1) *LLMRepo {
 	return &LLMRepo{conn: conn, llmService: llmService}
 }
 
-func (r *LLMRepo) CallGemini(ctx context.Context, prompt string, chatroomId uint, useHistory bool, file *multipart.FileHeader,
+func (r *LLMRepo) CallGemini(ctx context.Context, prompt string, chatroomId uint, file *multipart.FileHeader,
 ) (types.GeminiApiResponse, error) {
 	var history []*genai.Content
 	var err error
-	if useHistory {
-		history, err = getChatHistory(r, chatroomId)
+
+	var sessionId string
+	if chatroomId == 0 {
+		sessionId = generateSessionID()
+
+	} else {
+		sessionId = r.getSessionId(chatroomId)
+		history, err = r.getChatHistory(chatroomId)
 		if err != nil {
 			return types.GeminiApiResponse{}, err
 		}
-
-		log.Println("History: ", history)
 	}
 
 	if file != nil {
@@ -44,10 +48,10 @@ func (r *LLMRepo) CallGemini(ctx context.Context, prompt string, chatroomId uint
 		}
 		defer os.Remove(tempFilePath)
 
-		return r.llmService.SendFileWithText(ctx, prompt, history, tempFilePath)
+		return r.llmService.SendFileWithText(ctx, sessionId, prompt, history, tempFilePath)
 	}
 
-	return r.llmService.CallGemini(ctx, prompt, history)
+	return r.llmService.CallGemini(ctx, sessionId, prompt, history)
 }
 
 func saveUploadedFile(fileHeader *multipart.FileHeader) (string, error) {
@@ -71,7 +75,7 @@ func saveUploadedFile(fileHeader *multipart.FileHeader) (string, error) {
 	return tempFile.Name(), nil
 }
 
-func getChatHistory(r *LLMRepo, chatroomId uint) ([]*genai.Content, error) {
+func (r *LLMRepo) getChatHistory(chatroomId uint) ([]*genai.Content, error) {
 	var messages []struct {
 		Body   string
 		IsUser bool
@@ -96,4 +100,16 @@ func getChatHistory(r *LLMRepo, chatroomId uint) ([]*genai.Content, error) {
 	}
 
 	return history, err
+}
+
+func generateSessionID() string {
+	return uuid.New().String()
+}
+
+func (r *LLMRepo) getSessionId(chatroomId uint) string {
+	var chatRoom tables.ChatRoom
+	r.conn.Model(&tables.ChatRoom{}).Select("session_id").First(&chatRoom, chatroomId)
+
+	return chatRoom.SessionID
+
 }

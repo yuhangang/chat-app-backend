@@ -14,6 +14,7 @@ type User struct {
 type ChatRoom struct {
 	ID           uint          `gorm:"primaryKey" json:"id"`
 	CreatedAt    time.Time     `gorm:"autoCreateTime" json:"created_at"`
+	SessionID    string        `gorm:"type:varchar(100);not null;uniqueIndex" json:"session_id"`
 	UpdatedAt    time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
 	Name         string        `gorm:"type:varchar(100)" json:"name"`
 	UserID       uint          `gorm:"not null;index" json:"user_id"`
@@ -28,6 +29,7 @@ type ChatMessage struct {
 	IsUser         bool             `gorm:"not null" json:"is_user"`
 	HasAttachments bool             `gorm:"default:false" json:"has_attachments"`
 	Attachments    []ChatAttachment `gorm:"foreignKey:MessageID" json:"attachments"`
+	Embeds         []ChatEmbed      `gorm:"foreignKey:MessageID" json:"embeds"`
 }
 
 type ChatAttachment struct {
@@ -40,10 +42,20 @@ type ChatAttachment struct {
 	MessageID uint      `gorm:"not null;index" json:"message_id"`            // Foreign key to ChatMessage
 }
 
+type ChatEmbed struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	EmbedType string    `gorm:"type:varchar(50);not null" json:"embed_type"` // e.g., image, video, audio
+	EmbedKey  string    `gorm:"type:varchar(100);not null" json:"embed_key"` // Unique key to identify the embed
+	Data      string    `gorm:"type:text;not null" json:"data"`              // Embed data
+	MessageID uint      `gorm:"not null;index" json:"message_id"`            // Foreign key to ChatMessage
+}
+
 type LlmModel struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	ModelKey  string    `gorm:"type:varchar(100);not null" json:"model_key"`
 	Name      string    `gorm:"type:varchar(100);not null" json:"name"`
 	Creator   string    `gorm:"type:varchar(100);not null" json:"creator"`
+	Available bool      `gorm:"default:true" json:"available"`
 }

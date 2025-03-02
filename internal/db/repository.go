@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"errors"
 	"mime/multipart"
 
 	"github.com/yuhangang/chat-app-backend/internal/db/tables"
@@ -22,6 +21,10 @@ type ChatRepository interface {
 	CheckChatRoomExists(ctx context.Context, chatRoomID uint) (bool, error)
 }
 
+type ChatConfigRepository interface {
+	GetChatModels(ctx context.Context) ([]tables.LlmModel, error)
+}
+
 type MessageRepository interface {
 	GetMessagesForChatRoom(ctx context.Context, chatRoomID uint) ([]tables.ChatMessage, error)
 	CreateMessage(ctx context.Context,
@@ -35,7 +38,7 @@ type MessageRepository interface {
 		userID uint,
 		chatRoomName string,
 		message string,
-		response string,
+		response types.GeminiApiResponse,
 		attachment *multipart.FileHeader) (tables.ChatRoom, error)
 }
 
@@ -46,13 +49,7 @@ type UserRepository interface {
 	BindUser(ctx context.Context, userID uint, username string) (tables.User, error)
 }
 
-var (
-	ErrUserNotFound   = errors.New("user not found")
-	ErrUsernameExists = errors.New("username already exists")
-	ErrInternal       = errors.New("internal error")
-)
-
 type LLMRepository interface {
-	CallGemini(ctx context.Context, prompt string, chatroomId uint, useHistory bool, files *multipart.FileHeader,
+	CallGemini(ctx context.Context, prompt string, chatroomId uint, files *multipart.FileHeader,
 	) (types.GeminiApiResponse, error)
 }

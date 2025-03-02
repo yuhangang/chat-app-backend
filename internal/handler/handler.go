@@ -13,20 +13,22 @@ import (
 )
 
 type Handler struct {
-	chatHandler    ChatHandler
-	messageHandler MessageHandler
-	userHandler    UserHandler
-	authHandler    AuthHandler
-	jwtService     types.JwtService
+	chatHandler       ChatHandler
+	chatConfigHandler ChatConfigHandler
+	messageHandler    MessageHandler
+	userHandler       UserHandler
+	authHandler       AuthHandler
+	jwtService        types.JwtService
 }
 
-func NewHandler(chatHandler ChatHandler, messageHandler MessageHandler, userHandler UserHandler, authHandler AuthHandler, jwtService types.JwtService) *Handler {
+func NewHandler(chatHandler ChatHandler, chatConfigHandler ChatConfigHandler, messageHandler MessageHandler, userHandler UserHandler, authHandler AuthHandler, jwtService types.JwtService) *Handler {
 	return &Handler{
-		chatHandler:    chatHandler,
-		messageHandler: messageHandler,
-		userHandler:    userHandler,
-		authHandler:    authHandler,
-		jwtService:     jwtService,
+		chatHandler:       chatHandler,
+		chatConfigHandler: chatConfigHandler,
+		messageHandler:    messageHandler,
+		userHandler:       userHandler,
+		authHandler:       authHandler,
+		jwtService:        jwtService,
 	}
 }
 
@@ -47,6 +49,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 		"POST /auth/login":     h.authHandler.Login,
 		"POST /auth/refresh":   h.authHandler.RefreshToken,
 		"POST /auth/bind-user": h.authHandler.BindUser,
+		"GET /chat/models":     h.chatConfigHandler.GetChatModels,
 	}
 
 	for route, handler := range jwtProtectedRoutes {
@@ -98,6 +101,10 @@ func (h *Handler) jwtAuthMiddleware(next http.HandlerFunc, requireJwt bool) http
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
+}
+
+type ChatConfigHandler interface {
+	GetChatModels(http.ResponseWriter, *http.Request)
 }
 
 type ChatHandler interface {

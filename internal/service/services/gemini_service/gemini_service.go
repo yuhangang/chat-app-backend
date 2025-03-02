@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/yuhangang/chat-app-backend/types"
 
@@ -15,6 +16,7 @@ import (
 
 type GeminiServiceV1 struct {
 	client *genai.Client
+	cache  *ConversationCache
 }
 
 func NewGeminiServiceV1(ctx context.Context) *GeminiServiceV1 {
@@ -24,17 +26,24 @@ func NewGeminiServiceV1(ctx context.Context) *GeminiServiceV1 {
 		log.Fatal(err)
 	}
 
+	// Create cache with 30 minute TTL and 5 minute cleanup interval
+	cache := NewConversationCache(30*time.Minute, 5*time.Minute)
+
 	return &GeminiServiceV1{
 		client: client,
+		cache:  cache,
 	}
 }
 
-func (s *GeminiServiceV1) CallGemini(ctx context.Context, prompt string, history []*genai.Content) (types.GeminiApiResponse, error) {
-
+func (s *GeminiServiceV1) CallGemini(ctx context.Context, sessionID string, prompt string, history []*genai.Content) (types.GeminiApiResponse, error) {
 	model := s.client.GenerativeModel("gemini-2.0-flash")
-	// Ask the model to respond with JSON.
+
+	// Configure model response format
 	model.ResponseMIMEType = "application/json"
-	// Specify the schema.
+
+	// TODO: handle message temperature
+	//temp := float32(1.0)
+	//model.Temperature = &temp
 	model.ResponseSchema = &genai.Schema{
 		Type: genai.TypeArray,
 		Items: &genai.Schema{
@@ -44,13 +53,18 @@ func (s *GeminiServiceV1) CallGemini(ctx context.Context, prompt string, history
 			},
 		},
 	}
-	cs := model.StartChat()
-	cs.History = history
+
+	// Get or create a session from cache
+	cs := s.cache.GetOrCreateSession(sessionID, model)
+
+	// If history is provided and different from cached history, update it
+	if history != nil && len(history) > 0 {
+		cs.History = history
+	}
 
 	resp, err := cs.SendMessage(ctx, genai.Text(prompt))
-
 	if err != nil {
-		log.Fatalf("Error generating content: %v", err)
+		return types.GeminiApiResponse{}, fmt.Errorf("error generating content: %w", err)
 	}
 
 	var result string
@@ -59,19 +73,19 @@ func (s *GeminiServiceV1) CallGemini(ctx context.Context, prompt string, history
 			var response []map[string]string
 			err := json.Unmarshal([]byte(txt), &response)
 			if err != nil {
-				log.Fatal(err)
+				return types.GeminiApiResponse{}, fmt.Errorf("error unmarshaling response: %w", err)
 			}
 			result = response[0]["response"]
 		}
 	}
 
 	return types.GeminiApiResponse{
-		Response: result,
+		Response:  result,
+		SessionID: sessionID,
 	}, nil
-
 }
 
-func (s *GeminiServiceV1) SendFileWithText(ctx context.Context, prompt string, history []*genai.Content, tempFilePath string) (types.GeminiApiResponse, error) {
+func (s *GeminiServiceV1) SendFileWithText(ctx context.Context, sessionID string, prompt string, history []*genai.Content, tempFilePath string) (types.GeminiApiResponse, error) {
 	log.Println("SendFileWithText")
 	uploadedFile, err := s.uploadFile(ctx, tempFilePath)
 	if err != nil {
@@ -80,9 +94,9 @@ func (s *GeminiServiceV1) SendFileWithText(ctx context.Context, prompt string, h
 	defer s.client.DeleteFile(ctx, uploadedFile.Name)
 
 	model := s.client.GenerativeModel("gemini-2.0-flash")
-	// Ask the model to respond with JSON.
+
+	// Configure model response format
 	model.ResponseMIMEType = "application/json"
-	// Specify the schema.
 	model.ResponseSchema = &genai.Schema{
 		Type: genai.TypeArray,
 		Items: &genai.Schema{
@@ -92,13 +106,18 @@ func (s *GeminiServiceV1) SendFileWithText(ctx context.Context, prompt string, h
 			},
 		},
 	}
-	cs := model.StartChat()
-	cs.History = history
+
+	// Get or create a session from cache
+	cs := s.cache.GetOrCreateSession(sessionID, model)
+
+	// If history is provided and different from cached history, update it
+	if history != nil && len(history) > 0 {
+		cs.History = history
+	}
 
 	resp, err := cs.SendMessage(ctx, genai.Text(prompt), genai.FileData{URI: uploadedFile.URI})
-
 	if err != nil {
-		log.Fatalf("Error generating content: %v", err)
+		return types.GeminiApiResponse{}, fmt.Errorf("error generating content: %w", err)
 	}
 
 	var result string
@@ -107,14 +126,15 @@ func (s *GeminiServiceV1) SendFileWithText(ctx context.Context, prompt string, h
 			var response []map[string]string
 			err := json.Unmarshal([]byte(txt), &response)
 			if err != nil {
-				log.Fatal(err)
+				return types.GeminiApiResponse{}, fmt.Errorf("error unmarshaling response: %w", err)
 			}
 			result = response[0]["response"]
 		}
 	}
 
 	return types.GeminiApiResponse{
-		Response: result,
+		Response:  result,
+		SessionID: sessionID,
 	}, nil
 }
 

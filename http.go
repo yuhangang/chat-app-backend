@@ -41,15 +41,17 @@ func NewHttpServer(ctx context.Context, addr string) *httpServer {
 
 	userRepository := repository.NewUserRepo(conn)
 	chatRepository := repository.NewChatRoomRepo(conn)
+	chatConfigRepository := repository.NewChatConfigRepo(conn)
 	messageRepo := repository.NewMessageRepo(conn, storageService)
 	llmRepo := repository.NewLLMRepo(conn, llmService)
 
 	userHandler := handlers.NewUserHandler(userRepository)
 	chatHandler := handlers.NewChatHandler(chatRepository)
+	chatConfigHandler := handlers.NewChatConfigHandler(chatConfigRepository)
 	messageHandler := handlers.NewMessageChatHandler(chatRepository, messageRepo, llmRepo)
 	authHandler := handlers.NewAuthHandler(userRepository, jwtService)
 
-	httpHandler := handler.NewHandler(chatHandler, messageHandler, userHandler, authHandler, jwtService)
+	httpHandler := handler.NewHandler(chatHandler, chatConfigHandler, messageHandler, userHandler, authHandler, jwtService)
 
 	return &httpServer{addr: addr, httpHandler: httpHandler}
 }

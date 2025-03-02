@@ -36,7 +36,7 @@ func (h *MessageHandlerImpl) CreateChatRoomWithMessage(w http.ResponseWriter, r 
 
 	userId := r.Context().Value(ctxkey.UserIDKey).(uint)
 
-	geminiResponse, err := h.llmRepository.CallGemini(r.Context(), prompt, 0, false, fileHeader)
+	geminiResponse, err := h.llmRepository.CallGemini(r.Context(), prompt, 0, fileHeader)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -52,7 +52,7 @@ func (h *MessageHandlerImpl) CreateChatRoomWithMessage(w http.ResponseWriter, r 
 		chatRoomName = strings.Join(words[:10], " ")
 		chatRoomName = chatRoomName + "..."
 	}
-	chatRoom, err := h.messageRepository.CreateChatRoomWithMessage(r.Context(), userId, chatRoomName, prompt, geminiResponse.Response, fileHeader)
+	chatRoom, err := h.messageRepository.CreateChatRoomWithMessage(r.Context(), userId, chatRoomName, prompt, geminiResponse, fileHeader)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -100,7 +100,7 @@ func (h *MessageHandlerImpl) CreateMessage(w http.ResponseWriter, r *http.Reques
 	_, fileHeader, _ := r.FormFile("attachment")
 
 	// Call Gemini for a response based on the prompt
-	geminiResponse, err := h.llmRepository.CallGemini(r.Context(), prompt, uint(chatRoomID), true, fileHeader)
+	geminiResponse, err := h.llmRepository.CallGemini(r.Context(), prompt, uint(chatRoomID), fileHeader)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

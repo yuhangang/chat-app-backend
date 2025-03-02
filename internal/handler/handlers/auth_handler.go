@@ -177,8 +177,7 @@ func (h *AuthHandlerImpl) Login(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandlerImpl) BindUser(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(ctxkey.UserIDKey).(uint)
 	username := r.FormValue("username")
-	log.Println("userID", userID)
-	log.Println("username", username)
+
 	if username == "" {
 		http.Error(w, "missing username", http.StatusBadRequest)
 		return
